@@ -1,9 +1,9 @@
 [package]
 name         = "icm42688"
-version      = "0.1.1"
-authors      = ["oldsheep682hotmail.com"]
+version      = "0.1.0"
+authors      = ["oldsheep68#^@hotmail.com"]
 edition      = "2021"
-rust-version = "1.56"
+rust-version = "1.67"
 description  = "An embedded-hal driver for the ICM-42688 6-axis IMU"
 repository   = "https://github.com/oldsheep68/icm42688"
 license      = "MIT OR Apache-2.0"
