@@ -1,0 +1,30 @@
+[package]
+name         = "icm42688"
+version      = "0.1.1"
+authors      = ["oldsheep682hotmail.com"]
+edition      = "2021"
+rust-version = "1.56"
+description  = "An embedded-hal driver for the ICM-42688 6-axis IMU"
+repository   = "https://github.com/oldsheep68/icm42688"
+license      = "MIT OR Apache-2.0"
+keywords     = ["accelerometer", "gyro", "imu"]
+categories   = ["robotics", "IoT","embedded", "hardware-support", "no-std"]
+
+[target.xtensa-esp32-none-elf.dependencies]
+xtensa-atomic-emulation-trap = "0.4.0"
+esp32-hal = "0.10.0"
+esp-backtrace = { version = "0.5.0", features = ["esp32", "panic-handler", "print-uart"] }
+xtensa-lx-rt = { version = "0.15.0", features = ["esp32"], optional = true }
+
+[dependencies]
+accelerometer = "0.12.0"
+embedded-hal  = "0.2.7"
+
+
+[dev-dependencies]
+esp-println       = { version = "0.4.0", features = ["esp32"] }
+shared-bus = { version = "0.2.4" }
+
+[features]
+default = ["rt"]
+rt = ["xtensa-lx-rt"]
