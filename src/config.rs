@@ -169,27 +169,37 @@ impl TryFrom<u8> for GyroRange {
 /// Configurable power modes of the "IMU PWR_MGMT0"
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PowerMode {
-    /// Gyroscope: OFF, Accelerometer: OFF
-    Sleep = 0b00000,
-    /// Gyroscope: DRIVE ON, Accelerometer: OFF
-    Standby = 0b00100,
-    /// Gyroscope: OFF, Accelerometer: DUTY-CYCLED
-    AccelLowPower = 0b10010,
-    /// Gyroscope: OFF, Accelerometer: ON
-    AccelLowNoise = 0b00011,
-    /// Gyroscope: ON, Accelerometer: OFF
-    GyroLowNoise = 0b01100,
-    /// Gyroscope: ON, Accelerometer: ON
-    SixAxisLowNoise = 0b01111,
-    /// Idle mode RC oscilator is powered on Accel and Gyro OFF
-    Idle = 0b10000,
+    /// Gyroscope: OFF, Accelerometer: OFF, Temperature: OFF
+    Sleep = 0b100000,
+    /// Gyroscope: DRIVE ON Standby mode, Accelerometer: OFF, Temperature: OFF
+    Standby = 0b100100,
+    /// Gyroscope: OFF, Accelerometer: LowPoer Mode, Temperature: OFF
+    AccelLowPower = 0b110010,
+    /// Gyroscope: OFF, Accelerometer: ON, Temperature: OFF
+    AccelLowNoise = 0b100011,
+    /// Gyroscope: ON, Accelerometer: OFF, Temperature: OFF
+    GyroLowNoise = 0b101100,
+    /// Gyroscope: ON, Accelerometer: ON, Temperatur: OFF
+    SixAxisLowNoise = 0b101111,
+    /// Idle mode RC oscilator is powered on Accel and Gyro OFF and TEMPERATURSENSOR off
+    Idle = 0b110000,
+    /// Gyroscope: OFF, Accelerometer: OFF, Temperature: ON
+    
+    /// Gyroscope: OFF, Accelerometer: ON LowPoer, Temperature: ON
+    AccelLowPowerTemp = 0b010010,
+    /// Gyroscope: OFF, Accelerometer: ON LN, Temperature: ON
+    AccelLowNoiseTemp = 0b010011,
+    /// Gyroscope: ON, Accelerometer: OFF, Temperature: ON
+    GyroLowNoiseTemp = 0b001100,
+    /// Gyroscope: ON, Accelerometer: ON, Temperature: ON
+    SixAxisLowNoiseTemp = 0b001111,
 }
 
 impl Bitfield for PowerMode {
     const BITMASK: u8 = 0b0011_1111;
 
     fn bits(self) -> u8 {
-        // Temperature sensor on off occupies bit 5
+        // Temperature sensor on off occupies bit 5  (1 = OFF)
         // Idle occupies bit 4
         // `GYRO_MODE` occupies bits 3:2 in the register
         // `ACCEL_MODE` occupies bits 1:0 in the register
@@ -210,13 +220,17 @@ impl TryFrom<u8> for PowerMode {
         use PowerMode::*;
 
         match value {
-            0b00000 => Ok(Sleep),
-            0b00100 => Ok(Standby),
-            0b00010 => Ok(AccelLowPower),
-            0b00011 => Ok(AccelLowNoise),
-            0b01100 => Ok(GyroLowNoise),
-            0b01111 => Ok(SixAxisLowNoise),
-            0b10000 => Ok(Idle),
+            0b100000 => Ok(Sleep),
+            0b100100 => Ok(Standby),
+            0b100010 => Ok(AccelLowPower),
+            0b100011 => Ok(AccelLowNoise),
+            0b101100 => Ok(GyroLowNoise),
+            0b101111 => Ok(SixAxisLowNoise),
+            0b110000 => Ok(Idle),
+            0b010010 => Ok(AccelLowPowerTemp),
+            0b010011 => Ok(AccelLowNoiseTemp),
+            0b001100 => Ok(GyroLowNoiseTemp),
+            0b001111 => Ok(Self::SixAxisLowNoiseTemp),
             _ => Err(SensorError::InvalidDiscriminant),
         }
     }
@@ -225,28 +239,36 @@ impl TryFrom<u8> for PowerMode {
 /// Accelerometer ODR selection values
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum AccelOdr {
-    /// 1.6 kHz (LN mode)
-    Hz1600 = 0b0101,
-    /// 800 Hz (LN mode
-    Hz800 = 0b0110,
-    /// 400 Hz (LP or LN mode)
-    Hz400 = 0b0111,
-    /// 200 Hz (LP or LN mode)
-    Hz200 = 0b1000,
-    /// 100 Hz (LP or LN mode)
-    Hz100 = 0b1001,
-    /// 50 Hz (LP or LN mode)
-    Hz50 = 0b1010,
-    /// 25 Hz (LP or LN mode)
-    Hz25 = 0b1011,
-    /// 12.5 Hz (LP or LN mode)
-    Hz12_5 = 0b1100,
+    /// 32 kHz
+    Hz32000 = 0b0001,
+    /// 16 kHz
+    Hz16000 = 0b0010,
+    /// 8 kHz
+    Hz8000 = 0b0011,
+    /// 4 kHz
+    Hz4000 = 0b0100,
+    /// 2 kHz
+    Hz2000 = 0b0101,
+    /// 1000 Hz
+    Hz1000 = 0b0110,
+    /// 200 Hz
+    Hz200 = 0b0111,
+    /// 100 Hz
+    Hz100 = 0b1000,
+    /// 50 Hz
+    Hz50 = 0b1001,
+    /// 25 Hz
+    Hz25 = 0b1010,
+    /// 12.5 Hz
+    Hz12_5 = 0b1011,
     /// 6.25 Hz (LP mode)
-    Hz6_25 = 0b1101,
+    Hz6_25 = 0b1100,
     /// 3.125 Hz (LP mode)
-    Hz3_125 = 0b1110,
+    Hz3_125 = 0b1101,
     /// 1.5625 Hz (LP mode
-    Hz1_5625 = 0b1111,
+    Hz1_5625 = 0b1110,
+    /// 500 Hz
+    Hz500 = 0b1111,
 }
 
 impl AccelOdr {
@@ -254,9 +276,12 @@ impl AccelOdr {
         use AccelOdr::*;
 
         match self {
-            Hz1600 => 1600.0,
-            Hz800 => 800.0,
-            Hz400 => 400.0,
+            Hz32000 => 32000.0,
+            Hz16000 => 16000.0,
+            Hz8000 => 8000.0,
+            Hz4000 => 4000.0,
+            Hz2000 => 2000.0,
+            Hz1000 => 1000.0,
             Hz200 => 200.0,
             Hz100 => 100.0,
             Hz50 => 50.0,
@@ -265,6 +290,7 @@ impl AccelOdr {
             Hz6_25 => 6.25,
             Hz3_125 => 3.125,
             Hz1_5625 => 1.5625,
+            Hz500 => 500.0,
         }
     }
 }
@@ -280,7 +306,7 @@ impl Bitfield for AccelOdr {
 
 impl Default for AccelOdr {
     fn default() -> Self {
-        Self::Hz800
+        Self::Hz1000
     }
 }
 
@@ -291,17 +317,21 @@ impl TryFrom<u8> for AccelOdr {
         use AccelOdr::*;
 
         match value {
-            0b0101 => Ok(Hz1600),
-            0b0110 => Ok(Hz800),
-            0b0111 => Ok(Hz400),
-            0b1000 => Ok(Hz200),
-            0b1001 => Ok(Hz100),
-            0b1010 => Ok(Hz50),
-            0b1011 => Ok(Hz25),
-            0b1100 => Ok(Hz12_5),
-            0b1101 => Ok(Hz6_25),
-            0b1110 => Ok(Hz3_125),
-            0b1111 => Ok(Hz1_5625),
+            0b0001 => Ok(Hz32000),
+            0b0010 => Ok(Hz16000),
+            0b0011 => Ok(Hz8000),
+            0b0100 => Ok(Hz4000),
+            0b0101 => Ok(Hz2000),
+            0b0110 => Ok(Hz1000),
+            0b0111 => Ok(Hz200),
+            0b1000 => Ok(Hz100),
+            0b1001 => Ok(Hz50),
+            0b1010 => Ok(Hz25),
+            0b1011 => Ok(Hz12_5),
+            0b1100 => Ok(Hz6_25),
+            0b1101 => Ok(Hz3_125),
+            0b1110 => Ok(Hz1_5625),
+            0b1111 => Ok(Hz500),
             _ => Err(SensorError::InvalidDiscriminant),
         }
     }

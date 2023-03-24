@@ -16,6 +16,8 @@
 use core::f32::consts::PI;
 use core::fmt::Debug;
 
+//use esp_println::println;
+
 pub use accelerometer;
 use accelerometer::{
     error::Error as AccelerometerError,
@@ -102,41 +104,13 @@ where
     }
 
 
-    /// Instantiate a new instance of the driver and initialize the device
-    /// for the i2C interface. The slew rate of the icm42688 can be stet at startup
-    pub fn new_i2c_slew(i2c: I2C, address: Address, slew_rate: I2cSlewRate) -> Result<Self, Error<E>> {
-        let mut me = Self { i2c, address };
-
-        // set slwe rate
-        me.set_i2c_slew_rate(slew_rate)?;
-
-        // Verify that the device has the correct ID before continuing. If the ID does
-        // not match either of the expected values then it is likely the wrong chip is
-        // connected.
-        if !Self::DEVICE_IDS.contains(&me.device_id()?) {
-            return Err(Error::SensorError(SensorError::BadChip));
-        }
-
-        // Make sure that any configuration has been restored to the default values when
-        // initializing the driver.
-        me.set_accel_range(AccelRange::default())?;
-        me.set_gyro_range(GyroRange::default())?;
-
-        // The IMU uses `PowerMode::Sleep` by default, which disables both the accel and
-        // gyro, so we enable them both during driver initialization.
-        me.set_power_mode(PowerMode::SixAxisLowNoise)?;
-
-        Ok(me)
-    }
-
     // /// Instantiate a new instance of the driver and initialize the device
-    // pub fn new_fifo(
-    //     i2c: I2C,
-    //     address: Address,
-    //     packet_type: FifoPacketType,
-    //     delay: &mut dyn DelayUs<u8>,
-    // ) -> Result<Self, Error<E>> {
+    // /// for the i2C interface. The slew rate of the icm42688 can be stet at startup
+    // pub fn new_i2c_slew(i2c: I2C, address: Address, slew_rate: I2cSlewRate) -> Result<Self, Error<E>> {
     //     let mut me = Self { i2c, address };
+
+    //     // set slwe rate
+    //     me.set_i2c_slew_rate(slew_rate)?;
 
     //     // Verify that the device has the correct ID before continuing. If the ID does
     //     // not match either of the expected values then it is likely the wrong chip is
@@ -150,50 +124,147 @@ where
     //     me.set_accel_range(AccelRange::default())?;
     //     me.set_gyro_range(GyroRange::default())?;
 
-    //     // enable RC oszillator, so that configuration is possible
-    //     me.set_power_mode(PowerMode::Idle)?;
-
-    //     // setup FIFO configurations
-    //     me.write_reg(&Bank0::FIFO_CONFIG1, 0)?;
-
-    //     me.write_reg(&Bank0::INT_SOURCE3, 8)?;
-
-    //     match packet_type {
-    //         FifoPacketType::Packet1 => {
-    //             me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x01)?;
-    //             // no FSYNC
-    //         }
-    //         FifoPacketType::Packet2 => {
-    //             me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x02)?;
-    //             // no FSYNC
-    //         }
-    //         FifoPacketType::Packet3 => {
-    //             me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x03)?;
-    //             // no FSYNC
-    //         }
-    //         FifoPacketType::Packet4 => {
-    //             me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x0B)?;
-    //             //3+8=B
-    //             // no FSYNC
-    //         }
-    //     }
-    //     me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::TMST_CONFIG1, 0x15)?; // delta T for ts
-
-    //     // reduce number of generated packtets to 50Hz
-    //     me.set_accel_odr(AccelOdr::Hz100)?;
-    //     me.set_gyro_odr(GyroOdr::Hz100)?;
-
     //     // The IMU uses `PowerMode::Sleep` by default, which disables both the accel and
     //     // gyro, so we enable them both during driver initialization.
     //     me.set_power_mode(PowerMode::SixAxisLowNoise)?;
-    //     for _i in 0..200 {
-    //         delay.delay_us(250);
-    //     }
-
-    //     me.update_reg(&Bank0::SIGNAL_PATH_RESET, 0b0000_0100, 0b0000_0100)?;
 
     //     Ok(me)
     // }
+
+    /// Instantiate a new instance of the driver and initialize the device
+    /// for the i2C interface. The slew rate of the icm42688 can be stet at startup
+    pub fn new_i2c_slew(i2c: I2C, 
+                        address: Address, 
+                        slew_rate: I2cSlewRate,
+                        delay: &mut dyn DelayUs<u8>,
+                    ) -> Result<Self, Error<E>> {
+        let mut me = Self { i2c, address };
+        //println!("new_i2c_slew");
+
+        me.soft_reset()?;
+
+        for _i in 0..1200 {
+            delay.delay_us(250);
+        }
+
+        me.set_bank(RegisterBank::Bank0)?;
+
+        // set slwe rate
+        me.set_i2c_slew_rate(slew_rate)?;
+        //println!("new_i2c_slew slewrate set");
+
+        for _i in 0..1200 {
+            delay.delay_us(250);
+        }
+
+        // Verify that the device has the correct ID before continuing. If the ID does
+        // not match either of the expected values then it is likely the wrong chip is
+        // connected.
+        if !Self::DEVICE_IDS.contains(&me.device_id()?) {
+            return Err(Error::SensorError(SensorError::BadChip));
+        }
+        //println!("new_i2c_slew device id read ");
+
+        for _i in 0..1200 {
+            delay.delay_us(250);
+        }
+
+        // Make sure that any configuration has been restored to the default values when
+        // initializing the driver.
+        me.set_accel_range(AccelRange::default())?;
+        me.set_gyro_range(GyroRange::default())?;
+
+        //println!("new_i2c_slew accel & gyro set");
+
+        for _i in 0..1200 {
+            delay.delay_us(250);
+        }
+
+        // The IMU uses `PowerMode::Sleep` by default, which disables both the accel and
+        // gyro, so we enable them both during driver initialization.
+        me.set_power_mode(PowerMode::SixAxisLowNoise)?;
+        for _i in 0..1200 {
+            delay.delay_us(250);
+        }
+
+        Ok(me)
+    }
+
+
+    /// Instantiate a new instance of the driver and initialize the device
+    /// 
+    /// limitations: currently no temperature in fifo mode TODO: implement
+    pub fn new_fifo(
+        i2c: I2C,
+        address: Address,
+        packet_type: FifoPacketType,
+        delay: &mut dyn DelayUs<u8>,
+    ) -> Result<Self, Error<E>> {
+        let mut me = Self { i2c, address };
+        // Verify that the device has the correct ID before continuing. If the ID does
+        // not match either of the expected values then it is likely the wrong chip is
+        // connected.
+        if !Self::DEVICE_IDS.contains(&me.device_id()?) {
+            return Err(Error::SensorError(SensorError::BadChip));
+        }
+        //println!("new_fifo 1");
+        // Make sure that any configuration has been restored to the default values when
+        // initializing the driver.
+        me.set_accel_range(AccelRange::default())?;
+        me.set_gyro_range(GyroRange::default())?;
+
+        // enable RC oszillator, so that configuration is possible
+        me.set_power_mode(PowerMode::Idle)?;
+        //println!("new_fifo 2");
+        // setup FIFO configurations FIFO_MODE=1 => 0x40
+        me.update_reg(&Bank0::FIFO_CONFIG, 0x80, 0x80)?;
+
+        // TMST_EN = 1           0x1
+        // TMST_FSYNC_EN = 1     0x0
+        // TMST_DELATA_EN = 1    0x4
+        // TMST_RES = 0
+        // TMST_TO_TEGS_EN = 1  0x10
+        me.update_reg(&Bank0::TMST_CONFIG, 0x15, 0x15)?;
+        
+        match packet_type {
+            FifoPacketType::Packet1 => {
+                me.write_reg(&Bank0::FIFO_CONFIG1, 0x05)?;
+                // no FSYNC
+            }
+            FifoPacketType::Packet2 => {
+                //me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x02)?;
+                me.write_reg(&Bank0::FIFO_CONFIG1, 0x06)?;
+                // no FSYNC
+            }
+            FifoPacketType::Packet3 => {
+                //me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x03)?;
+                me.write_reg(&Bank0::FIFO_CONFIG1, 0x0F)?;
+                // FSYNC
+            }
+            FifoPacketType::Packet4 => {
+               // me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x0B)?;
+                me.write_reg(&Bank0::FIFO_CONFIG1, 0x17)?;
+                // no FSYNC
+            }
+        }
+        
+        
+        // reduce number of generated packtets to 100Hz
+        me.set_accel_odr(AccelOdr::Hz12_5)?;
+        me.set_gyro_odr(GyroOdr::Hz12_5)?;
+        
+        // The IMU uses `PowerMode::Sleep` by default, which disables both the accel and
+        // gyro, so we enable them both during driver initialization.
+        // me.set_power_mode(PowerMode::SixAxisLowNoiseTemp)?;
+        me.set_power_mode(PowerMode::SixAxisLowNoise)?;
+        for _i in 0..200 {
+            delay.delay_us(250);
+        }
+
+        me.update_reg(&Bank0::SIGNAL_PATH_RESET, 0b0000_0010, 0b0000_0010)?;
+
+        Ok(me)
+    }
 
     /// Return the raw interface to the underlying `I2C` instance
     pub fn free(self) -> I2C {
@@ -369,17 +440,17 @@ where
     //     Ok(ped_cnt)
     // }
 
-    // /// read time stampe from register
-    // pub fn read_tmst(&mut self) -> Result<u16, Error<E>> {
-    //     let ped_cnt = self.read_reg_u16(&Bank0::TMST_FSYNCH, &Bank0::TMST_FSYNCL)?;
-    //     Ok(ped_cnt)
-    // }
+    /// read time stampe from register
+    pub fn read_tmst(&mut self) -> Result<u16, Error<E>> {
+        let ped_cnt = self.read_reg_u16(&Bank0::TMST_FSYNCH, &Bank0::TMST_FSYNCL)?;
+        Ok(ped_cnt)
+    }
 
-    // /// read current fifo buffer level, available to read
-    // pub fn read_fifo_cnt(&mut self) -> Result<u16, Error<E>> {
-    //     let fifo_cnt = self.read_reg_u16(&Bank0::FIFO_COUNTH, &Bank0::FIFO_COUNTL)?;
-    //     Ok(fifo_cnt)
-    // }
+    /// read current fifo buffer level, available to read
+    pub fn read_fifo_cnt(&mut self) -> Result<u16, Error<E>> {
+        let fifo_cnt = self.read_reg_u16(&Bank0::FIFO_COUNTH, &Bank0::FIFO_COUNTL)?;
+        Ok(fifo_cnt)
+    }
 
     // pub fn set_fifo_mode(&mut self, delay: &mut dyn DelayUs<u8>) -> Result<(), Error<E>> {
     //     self.write_reg(&Bank0::FIFO_CONFIG1, 0)?;
@@ -409,15 +480,15 @@ where
         Ok(buffer[0])
     }
 
-    pub fn readreg(&mut self, addr: u8) -> Result<u8, Error<E>> {
-        let mut buffer = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
-        let adr: [u8; 1] = [addr];
-        self.i2c
-            .write_read(self.address as u8, &adr, &mut buffer)
-            .map_err(|e| Error::BusError(e))?;
+    // pub fn readreg(&mut self, addr: u8) -> Result<u8, Error<E>> {
+    //     let mut buffer = [0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+    //     let adr: [u8; 1] = [addr];
+    //     self.i2c
+    //         .write_read(self.address as u8, &adr, &mut buffer)
+    //         .map_err(|e| Error::BusError(e))?;
 
-        Ok(buffer[2])
-    }
+    //     Ok(buffer[2])
+    // }
 
     // -----------------------------------------------------------------------
     // PRIVATE
@@ -472,7 +543,17 @@ where
 
         Ok(())
     }
+    
+    fn set_bank(
+                &mut self,
+                bank: RegisterBank,
+    ) -> Result<(), Error<E>> {
+        // Set Bank to write to
+        self.update_reg(&Bank0::REG_BANK_SEL, bank.blk_sel(), 0x07)?;
+        Ok(())
+    }
 
+    
     /// Read a register at the provided address.
     fn read_reg(&mut self, reg: &dyn Register) -> Result<u8, Error<E>> {
         let mut buffer = [0u8];
@@ -483,6 +564,7 @@ where
         Ok(buffer[0])
     }
 
+    
     /// Read two registers and combine them into a single value.
     fn read_reg_i16(
         &mut self,
@@ -548,7 +630,7 @@ pub enum FifoPacketType {
     Packet4,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FifoDataP1 {
     pub ax: i16,
     pub ay: i16,
@@ -567,7 +649,7 @@ impl FifoDataP1 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FifoDataP2 {
     pub gx: i16,
     pub gy: i16,
@@ -586,7 +668,7 @@ impl FifoDataP2 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FifoDataP3 {
     pub ax: i16,
     pub ay: i16,
@@ -622,7 +704,7 @@ impl FifoDataP3 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct FifoDataP4 {
     pub ax: i32,
     pub ay: i32,
@@ -735,13 +817,13 @@ impl FifoDataSiP1 {
         let ax = i16::from_be_bytes([buffer[1], buffer[2]]);
         let ay = i16::from_be_bytes([buffer[3], buffer[4]]);
         let az = i16::from_be_bytes([buffer[5], buffer[6]]);
-        let t = i8::from_be_bytes([buffer[13]]);
+        let t = i8::from_be_bytes([buffer[7]]);
 
         Self {
             ax: (ax as f32) / ascal * GRAVITY,
             ay: (ay as f32) / ascal * GRAVITY,
             az: (az as f32) / ascal * GRAVITY,
-            t: (((t as f32) / 128.0) + 25.0),
+            t: (((t as f32) / 2.07) + 25.0),
         }
     }
 }
@@ -759,13 +841,13 @@ impl FifoDataSiP2 {
         let gx = i16::from_be_bytes([buffer[7], buffer[8]]);
         let gy = i16::from_be_bytes([buffer[9], buffer[10]]);
         let gz = i16::from_be_bytes([buffer[11], buffer[12]]);
-        let t = i8::from_be_bytes([buffer[13]]);
+        let t = i8::from_be_bytes([buffer[7]]);
 
         Self {
             gx: ((gx as f32) / gscal) * PI / 180.0,
             gy: ((gy as f32) / gscal) * PI / 180.0,
             gz: ((gz as f32) / gscal) * PI / 180.0,
-            t: (((t as f32) / 128.0) + 25.0),
+            t: (((t as f32) / 2.07) + 25.0),
         }
     }
 }
@@ -800,7 +882,7 @@ impl FifoDataSiP3 {
             gx: ((gx as f32) / gscal) * PI / 180.0,
             gy: ((gy as f32) / gscal) * PI / 180.0,
             gz: ((gz as f32) / gscal) * PI / 180.0,
-            t: (((t as f32) / 128.0) + 25.0),
+            t: (((t as f32) / 2.07) + 25.0),
             ts: (ts as f32) / 1_000_000.0,
         }
     }
@@ -839,7 +921,7 @@ impl FifoDataSiP4 {
             gx: ((gx as f32) / gscal) * PI / 180.0,
             gy: ((gy as f32) / gscal) * PI / 180.0,
             gz: ((gz as f32) / gscal) * PI / 180.0,
-            t: (((t as f32) / 128.0) + 25.0),
+            t: (((t as f32) / 132.48) + 25.0),
             ts: (ts as f32) / 1_000_000.0,
         }
     }
