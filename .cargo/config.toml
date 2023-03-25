@@ -1,13 +1,29 @@
-[target.xtensa-esp32-none-elf]
-runner = "espflash --monitor"
+# [target.xtensa-esp32-none-elf]
+# runner = "espflash --monitor"
+
+# [build]
+# rustflags = [
+#   "-C", "link-arg=-nostartfiles",
+#   "-C", "link-arg=-Wl,-Tlinkall.x"
+# ]
+# target = "xtensa-esp32-none-elf"
+
+##############################################
+
+[target.riscv32imac-unknown-none-elf]
+# runner = "espflash --monitor"
+# for use with espflash2.x
+runner = "espflash /dev/ttyUSB0 --monitor"
 
 [build]
 rustflags = [
-  "-C", "link-arg=-nostartfiles",
-  "-C", "link-arg=-Wl,-Tlinkall.x"
-]
-target = "xtensa-esp32-none-elf"
+  # Required to obtain backtraces (e.g. when using the "esp-backtrace" crate.)
+  # NOTE: May negatively impact performance of produced code
+  "-C", "force-frame-pointers",
 
+  "-C", "link-arg=-Tlinkall.x",
+]
+target = "riscv32imac-unknown-none-elf"
 
 [unstable]
 build-std = ["core"]

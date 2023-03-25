@@ -232,17 +232,14 @@ where
                 // no FSYNC
             }
             FifoPacketType::Packet2 => {
-                //me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x02)?;
                 me.write_reg(&Bank0::FIFO_CONFIG1, 0x06)?;
                 // no FSYNC
             }
             FifoPacketType::Packet3 => {
-                //me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x03)?;
-                me.write_reg(&Bank0::FIFO_CONFIG1, 0x0F)?;
+                me.write_reg(&Bank0::FIFO_CONFIG1, 0x07)?;
                 // FSYNC
             }
             FifoPacketType::Packet4 => {
-               // me.write_mreg(delay, RegisterBank::MReg1, &Mreg1::FIFO_CONFIG5, 0x0B)?;
                 me.write_reg(&Bank0::FIFO_CONFIG1, 0x17)?;
                 // no FSYNC
             }
@@ -250,13 +247,15 @@ where
         
         
         // reduce number of generated packtets to 100Hz
-        me.set_accel_odr(AccelOdr::Hz12_5)?;
-        me.set_gyro_odr(GyroOdr::Hz12_5)?;
+        // me.set_accel_odr(AccelOdr::Hz12_5)?;
+        // me.set_gyro_odr(GyroOdr::Hz12_5)?;
+        me.set_accel_odr(AccelOdr::Hz1000)?;
+        me.set_gyro_odr(GyroOdr::Hz1000)?;
         
         // The IMU uses `PowerMode::Sleep` by default, which disables both the accel and
         // gyro, so we enable them both during driver initialization.
-        // me.set_power_mode(PowerMode::SixAxisLowNoiseTemp)?;
-        me.set_power_mode(PowerMode::SixAxisLowNoise)?;
+        me.set_power_mode(PowerMode::SixAxisLowNoiseTemp)?;
+        // me.set_power_mode(PowerMode::SixAxisLowNoise)?;
         for _i in 0..200 {
             delay.delay_us(250);
         }
@@ -902,8 +901,8 @@ pub struct FifoDataSiP4 {
 
 impl FifoDataSiP4 {
     pub fn to_fifodata_si(raw_data: &FifoDataP4) -> Self {
-        const ascal: f32 = 8192.0 * 4.0;
-        const gscal: f32 = 131.0 * 2.0;
+        const ASCAL: f32 = 8192.0 * 4.0;
+        const GSCAL: f32 = 131.0 * 2.0;
 
         let ax = raw_data.ax as f32;
         let ay = raw_data.ay as f32;
@@ -915,12 +914,12 @@ impl FifoDataSiP4 {
         let ts = raw_data.ts as f32;
 
         Self {
-            ax: (ax as f32) / ascal * GRAVITY,
-            ay: (ay as f32) / ascal * GRAVITY,
-            az: (az as f32) / ascal * GRAVITY,
-            gx: ((gx as f32) / gscal) * PI / 180.0,
-            gy: ((gy as f32) / gscal) * PI / 180.0,
-            gz: ((gz as f32) / gscal) * PI / 180.0,
+            ax: (ax as f32) / ASCAL * GRAVITY,
+            ay: (ay as f32) / ASCAL * GRAVITY,
+            az: (az as f32) / ASCAL * GRAVITY,
+            gx: ((gx as f32) / GSCAL) * PI / 180.0,
+            gy: ((gy as f32) / GSCAL) * PI / 180.0,
+            gz: ((gz as f32) / GSCAL) * PI / 180.0,
             t: (((t as f32) / 132.48) + 25.0),
             ts: (ts as f32) / 1_000_000.0,
         }

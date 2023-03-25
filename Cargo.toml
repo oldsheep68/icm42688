@@ -8,23 +8,40 @@ description  = "An embedded-hal driver for the ICM-42688 6-axis IMU"
 repository   = "https://github.com/oldsheep68/icm42688"
 license      = "MIT OR Apache-2.0"
 keywords     = ["accelerometer", "gyro", "imu"]
-categories   = ["robotics", "IoT","embedded", "hardware-support", "no-std"]
+categories   = ["embedded", "hardware-support", "no-std"]
 
-[target.xtensa-esp32-none-elf.dependencies]
-xtensa-atomic-emulation-trap = "0.4.0"
-esp32-hal = "0.10.0"
-esp-backtrace = { version = "0.5.0", features = ["esp32", "panic-handler", "print-uart"] }
-xtensa-lx-rt = { version = "0.15.0", features = ["esp32"], optional = true }
+# [target.xtensa-esp32-none-elf.dependencies]
+# xtensa-atomic-emulation-trap = "0.4.0"
+# esp32-hal = "0.10.0"
+# esp-backtrace = { version = "0.5.0", features = ["esp32", "panic-handler", "print-uart"] }
+# xtensa-lx-rt = { version = "0.15.0", features = ["esp32"], optional = true }
 
 [dependencies]
+riscv = { version = "0.10.0", optional = true }
+riscv-rt = { version = "0.11", optional = true }
+esp32c3-hal = "0.5.0"
 accelerometer = "0.12.0"
 embedded-hal  = "0.2.7"
-
+# esp-println       = { version = "0.4.0", features = ["esp32"] }
+esp-backtrace     = { version = "0.4.0", features = ["esp32c3", "panic-handler", "exception-handler", "print-uart"] }
+esp-println       = { version = "0.3.1", features = ["esp32c3"] }
 
 [dev-dependencies]
-esp-println       = { version = "0.4.0", features = ["esp32"] }
-shared-bus = { version = "0.2.4" }
+# esp-println       = { version = "0.4.0", features = ["esp32"] }
+shared-bus = { version = "0.2.5" }
+critical-section  = "1.1.1"
+libm = "0.2.6"
+dcmimu = "0.2.2"
 
 [features]
 default = ["rt"]
-rt = ["xtensa-lx-rt"]
+rt = ["riscv-rt"]
+# rt = ["xtensa-lx-rt"]
+
+[profile.dev]
+opt-level = 1              # Use slightly better optimizations.
+overflow-checks = false     # Disable integer overflow checks.
+
+[profile.release]
+opt-level = 3            # Use slightly better optimizations.  "z", "s"
+# overflow-checks = false     # Disable integer overflow checks.
